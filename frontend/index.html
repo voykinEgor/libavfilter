@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SmartVAD Cleaner</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="card">
+        <h1>Удаление пауз в аудио</h1>
+        <p class="subtitle">Загрузите файл, прослушайте оригинал и обработанный результат.</p>
+
+        <input id="fileInput" type="file" accept="audio/*" hidden />
+        <button id="pickFileBtn" class="btn primary">Загрузить файл</button>
+
+        <div id="fileInfo" class="file-info hidden">
+          <p>Файл: <span id="fileName">-</span></p>
+        </div>
+
+        <section id="originalPanel" class="panel hidden">
+          <h2>Исходная дорожка</h2>
+          <canvas id="originalWave" height="96"></canvas>
+          <audio id="originalAudio" controls></audio>
+        </section>
+
+        <button id="processBtn" class="btn accent hidden" disabled>Очистить от тишины</button>
+
+        <section id="resultPanel" class="panel hidden">
+          <div class="result-head">
+            <h2>Итоговая дорожка</h2>
+            <div class="ratio-box">
+              <span>Коэффициент сокращения</span>
+              <strong id="ratioValue">-</strong>
+            </div>
+          </div>
+          <canvas id="resultWave" height="96"></canvas>
+          <audio id="resultAudio" controls></audio>
+          <button id="downloadProcessedBtn" class="btn primary hidden" type="button">Скачать обработанный файл</button>
+        </section>
+
+        <p id="status" class="status">Готово к загрузке.</p>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

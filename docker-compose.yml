@@ -1,0 +1,35 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      - APP_ADDR=${BACKEND_ADDR:-:8080}
+      - STORAGE_DIR=${BACKEND_STORAGE_DIR:-/data}
+      - PROCESSOR_URL=${BACKEND_PROCESSOR_URL:-http://processor:8081/process}
+      - MAX_UPLOAD_MB=${BACKEND_MAX_UPLOAD_MB:-100}
+    volumes:
+      - app-data:${BACKEND_STORAGE_DIR:-/data}
+    depends_on:
+      - processor
+
+  processor:
+    build:
+      context: .
+      dockerfile: processor/Dockerfile
+    environment:
+      - APP_ADDR=${PROCESSOR_ADDR:-:8081}
+      - FFMPEG_BIN=${PROCESSOR_FFMPEG_BIN:-/opt/ffmpeg/bin/ffmpeg}
+      - FFPROBE_BIN=${PROCESSOR_FFPROBE_BIN:-/opt/ffmpeg/bin/ffprobe}
+      - MAX_BODY_MB=${PROCESSOR_MAX_BODY_MB:-100}
+
+volumes:
+  app-data:

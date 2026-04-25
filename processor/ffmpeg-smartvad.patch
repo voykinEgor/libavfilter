@@ -1,0 +1,53 @@
+diff --git a/configure b/configure
+index 26f8efe..a0e3773 100755
+--- a/configure
++++ b/configure
+@@ -2047,6 +2047,7 @@ EXTERNAL_LIBRARY_LIST="
+     libdc1394
+     libflite
+     libfontconfig
++    libfvad
+     libfreetype
+     libfribidi
+     libharfbuzz
+@@ -4085,6 +4086,7 @@ amf_capture_filter_deps="amf"
+ ametadata_filter_deps="avformat"
+ amovie_filter_deps="avcodec avformat"
+ aresample_filter_deps="swresample"
++smartvad_filter_deps="libfvad"
+ asr_filter_deps="pocketsphinx"
+ ass_filter_deps="libass"
+ avgblur_opencl_filter_deps="opencl"
+@@ -7261,6 +7263,7 @@ enabled libdvdread        && require_pkg_config libdvdread "dvdread >= 6.1.1"
+ enabled libfdk_aac        && { check_pkg_config libfdk_aac fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen ||
+                                check_pkg_config libfdk_aac "fdk-aac >= 0.1.3" "fdk-aac/aacenc_lib.h" aacEncOpen ||
+                                die "ERROR: libfdk_aac not found"; }
++enabled libfvad           && require_pkg_config libfvad libfvad fvad.h fvad_new
+ enabled libflite          && require libflite "flite/flite.h" flite_init $flite_extralibs
+ enabled libfontconfig     && require_pkg_config libfontconfig fontconfig "fontconfig/fontconfig.h" FcInit
+ enabled libfreetype       && require_pkg_config libfreetype freetype2 "ft2build.h FT_FREETYPE_H" FT_Init_FreeType
+diff --git a/libavfilter/Makefile b/libavfilter/Makefile
+index 96610cf..60c3110 100644
+--- a/libavfilter/Makefile
++++ b/libavfilter/Makefile
+@@ -200,6 +200,7 @@ OBJS-$(CONFIG_SIDECHAINCOMPRESS_FILTER)      += af_sidechaincompress.o
+ OBJS-$(CONFIG_SIDECHAINGATE_FILTER)          += af_agate.o
+ OBJS-$(CONFIG_SILENCEDETECT_FILTER)          += af_silencedetect.o
+ OBJS-$(CONFIG_SILENCEREMOVE_FILTER)          += af_silenceremove.o
++OBJS-$(CONFIG_SMARTVAD_FILTER)               += af_smartvad.o
+ OBJS-$(CONFIG_SOFALIZER_FILTER)              += af_sofalizer.o
+ OBJS-$(CONFIG_SPEECHNORM_FILTER)             += af_speechnorm.o
+ OBJS-$(CONFIG_STEREOTOOLS_FILTER)            += af_stereotools.o
+diff --git a/libavfilter/allfilters.c b/libavfilter/allfilters.c
+index 6235af9..f89d1ab 100644
+--- a/libavfilter/allfilters.c
++++ b/libavfilter/allfilters.c
+@@ -23,6 +23,7 @@
+ #include "avfilter.h"
+ #include "filters.h"
+ 
++extern const FFFilter ff_af_smartvad;
+ extern const FFFilter ff_af_aap;
+ extern const FFFilter ff_af_abench;
+ extern const FFFilter ff_af_acompressor;
+
