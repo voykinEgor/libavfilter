@@ -143,11 +143,11 @@ func parseParams(r *http.Request) smartVADParams {
 
 	return smartVADParams{
 		FrameMS:         frameMS,
-		VADMode:         intParam(r.FormValue("vad_mode"), 2, 0, 3),
-		MinSilenceMS:    intParam(r.FormValue("min_silence_ms"), 300, 0, 10000),
-		TargetSilenceMS: intParam(r.FormValue("target_silence_ms"), 120, 0, 10000),
-		SpeechPadMS:     intParam(r.FormValue("speech_pad_ms"), 120, 0, 2000),
-		FadeMS:          intParam(r.FormValue("fade_ms"), 10, 0, 2000),
+		VADMode:         intParam(r.FormValue("vad_mode"), 3, 0, 3),
+		MinSilenceMS:    intParam(r.FormValue("min_silence_ms"), 180, 0, 10000),
+		TargetSilenceMS: intParam(r.FormValue("target_silence_ms"), 60, 0, 10000),
+		SpeechPadMS:     intParam(r.FormValue("speech_pad_ms"), 60, 0, 2000),
+		FadeMS:          intParam(r.FormValue("fade_ms"), 6, 0, 2000),
 	}
 }
 

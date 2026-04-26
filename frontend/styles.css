@@ -73,10 +73,21 @@ h2 {
   background: var(--primary);
 }
 
+.btn.secondary {
+  color: #17412e;
+  background: #d9efe0;
+  border: 1px solid #b7d9c3;
+}
+
 .btn.accent {
   color: #fff;
   background: var(--accent);
   margin: 12px 0 6px;
+}
+
+.btn.danger {
+  color: #fff;
+  background: #b23a48;
 }
 
 #downloadProcessedBtn {
@@ -90,6 +101,24 @@ h2 {
 
 .file-info {
   margin-top: 16px;
+}
+
+.input-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.record-timer {
+  min-width: 56px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #e2d8c2;
+  background: #fff;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: #553015;
 }
 
 .panel {
@@ -143,6 +172,19 @@ audio {
 }
 
 @media (max-width: 700px) {
+  .input-actions {
+    align-items: stretch;
+  }
+
+  .input-actions .btn {
+    width: 100%;
+  }
+
+  .record-timer {
+    width: 100%;
+    text-align: center;
+  }
+
   .result-head {
     flex-direction: column;
     align-items: flex-start;

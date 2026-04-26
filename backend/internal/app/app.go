@@ -209,11 +209,11 @@ func (a *App) processViaService(originalName, originalPath string) ([]byte, proc
 	}
 
 	_ = writer.WriteField("frame_ms", "20")
-	_ = writer.WriteField("vad_mode", "2")
-	_ = writer.WriteField("min_silence_ms", "300")
-	_ = writer.WriteField("target_silence_ms", "120")
-	_ = writer.WriteField("speech_pad_ms", "120")
-	_ = writer.WriteField("fade_ms", "10")
+	_ = writer.WriteField("vad_mode", "3")
+	_ = writer.WriteField("min_silence_ms", "180")
+	_ = writer.WriteField("target_silence_ms", "60")
+	_ = writer.WriteField("speech_pad_ms", "60")
+	_ = writer.WriteField("fade_ms", "6")
 
 	if err := writer.Close(); err != nil {
 		return nil, processorStats{}, err

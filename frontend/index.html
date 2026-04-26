@@ -10,10 +10,15 @@
     <main class="page">
       <section class="card">
         <h1>Удаление пауз в аудио</h1>
-        <p class="subtitle">Загрузите файл, прослушайте оригинал и обработанный результат.</p>
+        <p class="subtitle">Загрузите файл или запишите аудио с микрофона, затем сравните оригинал и обработанный результат.</p>
 
         <input id="fileInput" type="file" accept="audio/*" hidden />
-        <button id="pickFileBtn" class="btn primary">Загрузить файл</button>
+
+        <div class="input-actions">
+          <button id="pickFileBtn" class="btn primary" type="button">Загрузить файл</button>
+          <button id="recordBtn" class="btn secondary" type="button">Начать запись</button>
+          <span id="recordTimer" class="record-timer hidden">00:00</span>
+        </div>
 
         <div id="fileInfo" class="file-info hidden">
           <p>Файл: <span id="fileName">-</span></p>
@@ -25,7 +30,7 @@
           <audio id="originalAudio" controls></audio>
         </section>
 
-        <button id="processBtn" class="btn accent hidden" disabled>Очистить от тишины</button>
+        <button id="processBtn" class="btn accent hidden" disabled type="button">Очистить от пауз</button>
 
         <section id="resultPanel" class="panel hidden">
           <div class="result-head">
@@ -40,7 +45,7 @@
           <button id="downloadProcessedBtn" class="btn primary hidden" type="button">Скачать обработанный файл</button>
         </section>
 
-        <p id="status" class="status">Готово к загрузке.</p>
+        <p id="status" class="status">Готово к загрузке или записи.</p>
       </section>
     </main>
 
