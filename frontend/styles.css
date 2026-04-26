@@ -121,6 +121,55 @@ h2 {
   color: #553015;
 }
 
+.speed-box {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.speed-label {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.speed-controls {
+  display: inline-flex;
+  border: 1px solid #dccfb7;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.speed-btn {
+  border: 0;
+  border-right: 1px solid #e6dbc5;
+  background: transparent;
+  color: #4e4a43;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.speed-btn:last-child {
+  border-right: 0;
+}
+
+.speed-btn:hover {
+  background: #f7f1e4;
+}
+
+.speed-btn.active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.speed-value {
+  color: #553015;
+  font-size: 0.95rem;
+}
+
 .panel {
   margin-top: 14px;
   border: 1px solid var(--border);
@@ -135,6 +184,54 @@ canvas {
   border: 1px dashed #d7ccb4;
   border-radius: 8px;
   background: linear-gradient(180deg, #fff, #fbf6ea);
+}
+
+.wave-wrap {
+  position: relative;
+  min-height: 96px;
+}
+
+.wave-state {
+  position: absolute;
+  inset: 0;
+  border: 1px dashed #d7ccb4;
+  border-radius: 8px;
+  background: rgba(252, 248, 238, 0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #5b554b;
+  font-size: 0.86rem;
+  text-align: center;
+  padding: 8px;
+}
+
+.wave-state.error {
+  color: #8f1c1c;
+  background: rgba(255, 244, 244, 0.96);
+}
+
+.loader-bar {
+  width: min(240px, 80%);
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #efe5d1;
+}
+
+.loader-bar span {
+  display: block;
+  width: 46%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2d6a4f, #5eb086);
+  animation: loader-slide 1.1s ease-in-out infinite;
+}
+
+.wave-state.error .loader-bar {
+  display: none;
 }
 
 audio {
@@ -167,8 +264,30 @@ audio {
   color: var(--muted);
 }
 
+.process-loader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+#processBtn.is-loading {
+  opacity: 0.85;
+}
+
 .hidden {
   display: none;
+}
+
+@keyframes loader-slide {
+  0% {
+    transform: translateX(-130%);
+  }
+  100% {
+    transform: translateX(260%);
+  }
 }
 
 @media (max-width: 700px) {
@@ -183,6 +302,18 @@ audio {
   .record-timer {
     width: 100%;
     text-align: center;
+  }
+
+  .speed-box {
+    align-items: stretch;
+  }
+
+  .speed-controls {
+    width: 100%;
+  }
+
+  .speed-btn {
+    flex: 1 1 auto;
   }
 
   .result-head {

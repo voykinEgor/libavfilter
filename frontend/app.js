@@ -5,6 +5,9 @@ const fileInput = document.getElementById("fileInput");
 const fileInfo = document.getElementById("fileInfo");
 const fileNameEl = document.getElementById("fileName");
 const processBtn = document.getElementById("processBtn");
+const processLoader = document.getElementById("processLoader");
+const speedControlsEl = document.getElementById("speedControls");
+const speedValueEl = document.getElementById("speedValue");
 const statusEl = document.getElementById("status");
 const originalPanel = document.getElementById("originalPanel");
 const resultPanel = document.getElementById("resultPanel");
@@ -12,6 +15,10 @@ const originalAudio = document.getElementById("originalAudio");
 const resultAudio = document.getElementById("resultAudio");
 const originalWave = document.getElementById("originalWave");
 const resultWave = document.getElementById("resultWave");
+const originalWaveState = document.getElementById("originalWaveState");
+const originalWaveStateText = document.getElementById("originalWaveStateText");
+const resultWaveState = document.getElementById("resultWaveState");
+const resultWaveStateText = document.getElementById("resultWaveStateText");
 const ratioValue = document.getElementById("ratioValue");
 const downloadProcessedBtn = document.getElementById("downloadProcessedBtn");
 
@@ -32,7 +39,21 @@ const RECORDER_MIME_TYPES = [
   "audio/mp4",
 ];
 
+const PLAYBACK_SPEEDS = [1, 1.25, 1.5, 2];
+
+const waveUI = {
+  original: {
+    container: originalWaveState,
+    text: originalWaveStateText,
+  },
+  result: {
+    container: resultWaveState,
+    text: resultWaveStateText,
+  },
+};
+
 let appState = APP_STATES.IDLE;
+let selectedPlaybackRate = 1;
 let uploadedId = "";
 let selectedFile = null;
 let processedDownloadUrl = "";
@@ -49,23 +70,103 @@ fileInput.addEventListener("change", onFileSelected);
 recordBtn.addEventListener("click", onRecordClick);
 processBtn.addEventListener("click", onProcessClick);
 downloadProcessedBtn.addEventListener("click", onDownloadClick);
+speedControlsEl.addEventListener("click", onSpeedControlClick);
+originalAudio.addEventListener("loadedmetadata", () => applyPlaybackRate(originalAudio));
+resultAudio.addEventListener("loadedmetadata", () => applyPlaybackRate(resultAudio));
 
 window.addEventListener("resize", () => {
   if (originalAudio.src) {
-    drawWaveformFromSource(originalAudio.src, originalWave).catch(() => {});
+    drawWaveformWithState(originalAudio.src, originalWave, "original").catch(() => {});
   }
   if (resultAudio.src) {
-    drawWaveformFromSource(resultAudio.src, resultWave).catch(() => {});
+    drawWaveformWithState(resultAudio.src, resultWave, "result").catch(() => {});
   }
 });
 
 setRecordButtonState("idle");
+setPlaybackRate(1);
+setProcessingState(false);
 setAppState(APP_STATES.IDLE, "Готово к загрузке или записи.");
 
 if (!isRecordingSupported()) {
   recordBtn.disabled = true;
   recordBtn.title = "Ваш браузер не поддерживает MediaRecorder/getUserMedia";
   setAppState(APP_STATES.IDLE, "Запись в этом браузере не поддерживается. Можно загрузить готовый аудиофайл.");
+}
+
+function onSpeedControlClick(event) {
+  const button = event.target.closest(".speed-btn");
+  if (!button) {
+    return;
+  }
+
+  const rate = Number(button.dataset.speed);
+  if (!PLAYBACK_SPEEDS.includes(rate)) {
+    return;
+  }
+
+  setPlaybackRate(rate);
+}
+
+function setPlaybackRate(rate) {
+  selectedPlaybackRate = rate;
+  applyPlaybackRate(originalAudio);
+  applyPlaybackRate(resultAudio);
+
+  speedValueEl.textContent = formatPlaybackRate(rate);
+
+  const speedButtons = speedControlsEl.querySelectorAll(".speed-btn");
+  speedButtons.forEach((button) => {
+    const isActive = Number(button.dataset.speed) === rate;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+}
+
+function applyPlaybackRate(audioEl) {
+  audioEl.playbackRate = selectedPlaybackRate;
+}
+
+function formatPlaybackRate(rate) {
+  return Number.isInteger(rate) ? `${rate}x` : `${rate.toFixed(2).replace(/0$/, "")}x`;
+}
+
+function setWaveState(slot, mode, text) {
+  const state = waveUI[slot];
+  if (!state) {
+    return;
+  }
+
+  state.container.classList.remove("hidden", "error");
+  state.text.textContent = text;
+
+  if (mode === "error") {
+    state.container.classList.add("error");
+  }
+
+  if (mode === "ready") {
+    state.container.classList.add("hidden");
+  }
+}
+
+async function drawWaveformWithState(source, canvas, slot) {
+  setWaveState(slot, "loading", "Рисуем waveform...");
+  await new Promise((resolve) => window.requestAnimationFrame(resolve));
+
+  try {
+    await drawWaveformFromSource(source, canvas);
+    setWaveState(slot, "ready", "");
+  } catch (error) {
+    setWaveState(slot, "error", "Не удалось отрисовать waveform");
+    throw error;
+  }
+}
+
+function setProcessingState(isProcessing) {
+  processBtn.classList.toggle("is-loading", isProcessing);
+  processLoader.classList.toggle("hidden", !isProcessing);
+  processBtn.textContent = isProcessing ? "Очищаем паузы..." : "Очистить от пауз";
+  processBtn.disabled = isProcessing || !uploadedId;
 }
 
 async function onFileSelected(event) {
@@ -184,25 +285,26 @@ async function loadInputFile(file, sourceMessage) {
   fileInfo.classList.remove("hidden");
   originalPanel.classList.remove("hidden");
   processBtn.classList.remove("hidden");
-  processBtn.disabled = true;
+  setProcessingState(false);
 
   fileNameEl.textContent = file.name;
 
   const localUrl = URL.createObjectURL(file);
   setOriginalAudioSource(localUrl);
   try {
-    await drawWaveformFromSource(localUrl, originalWave);
+    await drawWaveformWithState(localUrl, originalWave, "original");
   } catch (_) {
-    // Fallback to player even if waveform decoding fails.
+    // Playback remains available even if waveform rendering fails.
   }
 
   setAppState(APP_STATES.RECORDED, `${sourceMessage} Загружаем входной файл на сервер...`);
 
   try {
     uploadedId = await uploadInputFile(file);
-    processBtn.disabled = false;
+    setProcessingState(false);
     setAppState(APP_STATES.RECORDED, "Входной файл готов. Нажмите «Очистить от пауз».");
   } catch (error) {
+    setProcessingState(false);
     setAppState(APP_STATES.RECORDED, `Ошибка загрузки: ${error.message}`);
   }
 }
@@ -214,6 +316,8 @@ function setOriginalAudioSource(sourceUrl) {
   }
 
   originalAudio.src = sourceUrl;
+  applyPlaybackRate(originalAudio);
+
   if (sourceUrl.startsWith("blob:")) {
     originalObjectUrl = sourceUrl;
   }
@@ -223,6 +327,7 @@ function resetProcessedOutput() {
   resultPanel.classList.add("hidden");
   downloadProcessedBtn.classList.add("hidden");
   ratioValue.textContent = "-";
+  setWaveState("result", "ready", "");
   resultAudio.removeAttribute("src");
   resultAudio.load();
 }
@@ -250,7 +355,7 @@ async function onProcessClick() {
     return;
   }
 
-  processBtn.disabled = true;
+  setProcessingState(true);
   setAppState(APP_STATES.PROCESSING, "Идет обработка...");
 
   try {
@@ -264,15 +369,17 @@ async function onProcessClick() {
 
     const payload = await response.json();
     const processedUrl = `${payload.processedUrl}?t=${Date.now()}`;
+
     resultAudio.src = processedUrl;
+    applyPlaybackRate(resultAudio);
     resultPanel.classList.remove("hidden");
     processedDownloadUrl = payload.processedUrl;
     downloadProcessedBtn.classList.remove("hidden");
 
     try {
-      await drawWaveformFromSource(processedUrl, resultWave);
+      await drawWaveformWithState(processedUrl, resultWave, "result");
     } catch (_) {
-      // Waveform rendering failure should not block playback/download UX.
+      // Playback/download remain available even when waveform rendering fails.
     }
 
     const originalDurationSec = Number(payload.originalDurationSec || 0);
@@ -292,7 +399,7 @@ async function onProcessClick() {
   } catch (error) {
     setAppState(resolveFallbackState(), `Ошибка обработки: ${error.message}`);
   } finally {
-    processBtn.disabled = !uploadedId;
+    setProcessingState(false);
   }
 }
 
@@ -548,10 +655,12 @@ async function loadAudioData(source) {
   }
 
   const audioContext = new AudioCtx();
-  const decoded = await audioContext.decodeAudioData(arrayBuffer.slice(0));
-  const channelData = decoded.getChannelData(0);
-  await audioContext.close();
-  return channelData;
+  try {
+    const decoded = await audioContext.decodeAudioData(arrayBuffer.slice(0));
+    return decoded.getChannelData(0);
+  } finally {
+    await audioContext.close();
+  }
 }
 
 function extractPeaks(channelData, width) {

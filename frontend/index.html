@@ -20,17 +20,38 @@
           <span id="recordTimer" class="record-timer hidden">00:00</span>
         </div>
 
+        <div class="speed-box">
+          <span class="speed-label">Скорость:</span>
+          <div id="speedControls" class="speed-controls" role="group" aria-label="Скорость воспроизведения">
+            <button class="speed-btn active" type="button" data-speed="1" aria-pressed="true">1x</button>
+            <button class="speed-btn" type="button" data-speed="1.25" aria-pressed="false">1.25x</button>
+            <button class="speed-btn" type="button" data-speed="1.5" aria-pressed="false">1.5x</button>
+            <button class="speed-btn" type="button" data-speed="2" aria-pressed="false">2x</button>
+          </div>
+          <strong id="speedValue" class="speed-value">1x</strong>
+        </div>
+
         <div id="fileInfo" class="file-info hidden">
           <p>Файл: <span id="fileName">-</span></p>
         </div>
 
         <section id="originalPanel" class="panel hidden">
           <h2>Исходная дорожка</h2>
-          <canvas id="originalWave" height="96"></canvas>
+          <div class="wave-wrap">
+            <canvas id="originalWave" height="96"></canvas>
+            <div id="originalWaveState" class="wave-state hidden" role="status" aria-live="polite">
+              <div class="loader-bar"><span></span></div>
+              <span id="originalWaveStateText">Рисуем waveform...</span>
+            </div>
+          </div>
           <audio id="originalAudio" controls></audio>
         </section>
 
         <button id="processBtn" class="btn accent hidden" disabled type="button">Очистить от пауз</button>
+        <div id="processLoader" class="process-loader hidden" role="status" aria-live="polite">
+          <div class="loader-bar"><span></span></div>
+          <span>Обрабатываем аудио...</span>
+        </div>
 
         <section id="resultPanel" class="panel hidden">
           <div class="result-head">
@@ -40,7 +61,13 @@
               <strong id="ratioValue">-</strong>
             </div>
           </div>
-          <canvas id="resultWave" height="96"></canvas>
+          <div class="wave-wrap">
+            <canvas id="resultWave" height="96"></canvas>
+            <div id="resultWaveState" class="wave-state hidden" role="status" aria-live="polite">
+              <div class="loader-bar"><span></span></div>
+              <span id="resultWaveStateText">Рисуем waveform...</span>
+            </div>
+          </div>
           <audio id="resultAudio" controls></audio>
           <button id="downloadProcessedBtn" class="btn primary hidden" type="button">Скачать обработанный файл</button>
         </section>
