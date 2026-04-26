@@ -170,6 +170,41 @@ h2 {
   font-size: 0.95rem;
 }
 
+.sensitivity-box {
+  margin-top: 14px;
+}
+
+.sensitivity-label {
+  display: block;
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+}
+
+.sensitivity-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sensitivity-hint {
+  color: #6f6658;
+  font-size: 0.82rem;
+}
+
+.sensitivity-range {
+  flex: 1 1 260px;
+  accent-color: var(--primary);
+}
+
+.sensitivity-value {
+  min-width: 50px;
+  color: #553015;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .panel {
   margin-top: 14px;
   border: 1px solid var(--border);
@@ -314,6 +349,19 @@ audio {
 
   .speed-btn {
     flex: 1 1 auto;
+  }
+
+  .sensitivity-controls {
+    align-items: stretch;
+  }
+
+  .sensitivity-range {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .sensitivity-value {
+    margin-left: auto;
   }
 
   .result-head {

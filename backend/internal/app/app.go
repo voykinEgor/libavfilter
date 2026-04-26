@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -34,6 +35,19 @@ type App struct {
 type processorStats struct {
 	OriginalDuration  float64
 	ProcessedDuration float64
+}
+
+type processRequest struct {
+	Sensitivity *int `json:"sensitivity"`
+}
+
+type smartVADParams struct {
+	FrameMS         int
+	VADMode         int
+	MinSilenceMS    int
+	TargetSilenceMS int
+	SpeechPadMS     int
+	FadeMS          int
 }
 
 func New(cfg Config) (*App, error) {
@@ -133,8 +147,14 @@ func (a *App) handleProcess(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	reqPayload, err := parseProcessRequest(r)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("invalid process payload: %v", err), http.StatusBadRequest)
+		return
+	}
+
 	originalPath := filepath.Join(a.cfg.StorageDir, meta.ID, meta.OriginalStoredName)
-	processedAudio, stats, err := a.processViaService(meta.OriginalName, originalPath)
+	processedAudio, stats, err := a.processViaService(meta.OriginalName, originalPath, reqPayload.Sensitivity)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("processing failed: %v", err), http.StatusBadGateway)
 		return
@@ -190,7 +210,7 @@ func (a *App) handleMedia(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, info.Name(), info.ModTime(), f)
 }
 
-func (a *App) processViaService(originalName, originalPath string) ([]byte, processorStats, error) {
+func (a *App) processViaService(originalName, originalPath string, sensitivity *int) ([]byte, processorStats, error) {
 	src, err := os.Open(originalPath)
 	if err != nil {
 		return nil, processorStats{}, err
@@ -208,12 +228,13 @@ func (a *App) processViaService(originalName, originalPath string) ([]byte, proc
 		return nil, processorStats{}, err
 	}
 
-	_ = writer.WriteField("frame_ms", "20")
-	_ = writer.WriteField("vad_mode", "3")
-	_ = writer.WriteField("min_silence_ms", "180")
-	_ = writer.WriteField("target_silence_ms", "60")
-	_ = writer.WriteField("speech_pad_ms", "60")
-	_ = writer.WriteField("fade_ms", "6")
+	params := mapSensitivityToVADParams(sensitivity)
+	_ = writer.WriteField("frame_ms", strconv.Itoa(params.FrameMS))
+	_ = writer.WriteField("vad_mode", strconv.Itoa(params.VADMode))
+	_ = writer.WriteField("min_silence_ms", strconv.Itoa(params.MinSilenceMS))
+	_ = writer.WriteField("target_silence_ms", strconv.Itoa(params.TargetSilenceMS))
+	_ = writer.WriteField("speech_pad_ms", strconv.Itoa(params.SpeechPadMS))
+	_ = writer.WriteField("fade_ms", strconv.Itoa(params.FadeMS))
 
 	if err := writer.Close(); err != nil {
 		return nil, processorStats{}, err
@@ -246,6 +267,71 @@ func (a *App) processViaService(originalName, originalPath string) ([]byte, proc
 	}
 
 	return raw, stats, nil
+}
+
+func parseProcessRequest(r *http.Request) (processRequest, error) {
+	payload := processRequest{}
+	if r.ContentLength == 0 {
+		return payload, nil
+	}
+
+	contentType := strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type")))
+	if !strings.Contains(contentType, "application/json") {
+		return payload, nil
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&payload); err != nil && err != io.EOF {
+		return processRequest{}, err
+	}
+
+	if payload.Sensitivity != nil {
+		value := clampInt(*payload.Sensitivity, 0, 100)
+		payload.Sensitivity = &value
+	}
+
+	return payload, nil
+}
+
+func mapSensitivityToVADParams(sensitivity *int) smartVADParams {
+	level := 60
+	if sensitivity != nil {
+		level = clampInt(*sensitivity, 0, 100)
+	}
+
+	mode := 1
+	switch {
+	case level >= 55:
+		mode = 3
+	case level >= 25:
+		mode = 2
+	}
+
+	return smartVADParams{
+		FrameMS:         20,
+		VADMode:         mode,
+		MinSilenceMS:    clampInt(lerpInt(270, 120, level), 100, 10000),
+		TargetSilenceMS: clampInt(lerpInt(90, 40, level), 0, 10000),
+		SpeechPadMS:     clampInt(lerpInt(90, 40, level), 0, 2000),
+		FadeMS:          clampInt(lerpInt(9, 4, level), 0, 2000),
+	}
+}
+
+func lerpInt(from, to, percent int) int {
+	ratio := float64(clampInt(percent, 0, 100)) / 100
+	value := float64(from) + (float64(to-from) * ratio)
+	return int(math.Round(value))
+}
+
+func clampInt(value, minValue, maxValue int) int {
+	if value < minValue {
+		return minValue
+	}
+	if value > maxValue {
+		return maxValue
+	}
+	return value
 }
 
 func parseHeaderFloat(value string, fallback float64) float64 {

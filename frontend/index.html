@@ -47,6 +47,16 @@
           <audio id="originalAudio" controls></audio>
         </section>
 
+        <div class="sensitivity-box">
+          <label class="sensitivity-label" for="sensitivityRange">Чувствительность очистки пауз</label>
+          <div class="sensitivity-controls">
+            <span class="sensitivity-hint">Мягко</span>
+            <input id="sensitivityRange" class="sensitivity-range" type="range" min="0" max="100" step="1" value="60" />
+            <span class="sensitivity-hint">Агрессивно</span>
+            <strong id="sensitivityValue" class="sensitivity-value">60%</strong>
+          </div>
+        </div>
+
         <button id="processBtn" class="btn accent hidden" disabled type="button">Очистить от пауз</button>
         <div id="processLoader" class="process-loader hidden" role="status" aria-live="polite">
           <div class="loader-bar"><span></span></div>

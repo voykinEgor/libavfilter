@@ -8,6 +8,8 @@ const processBtn = document.getElementById("processBtn");
 const processLoader = document.getElementById("processLoader");
 const speedControlsEl = document.getElementById("speedControls");
 const speedValueEl = document.getElementById("speedValue");
+const sensitivityRangeEl = document.getElementById("sensitivityRange");
+const sensitivityValueEl = document.getElementById("sensitivityValue");
 const statusEl = document.getElementById("status");
 const originalPanel = document.getElementById("originalPanel");
 const resultPanel = document.getElementById("resultPanel");
@@ -54,6 +56,7 @@ const waveUI = {
 
 let appState = APP_STATES.IDLE;
 let selectedPlaybackRate = 1;
+let selectedSensitivity = 60;
 let uploadedId = "";
 let selectedFile = null;
 let processedDownloadUrl = "";
@@ -71,6 +74,8 @@ recordBtn.addEventListener("click", onRecordClick);
 processBtn.addEventListener("click", onProcessClick);
 downloadProcessedBtn.addEventListener("click", onDownloadClick);
 speedControlsEl.addEventListener("click", onSpeedControlClick);
+sensitivityRangeEl.addEventListener("input", onSensitivityInput);
+sensitivityRangeEl.addEventListener("change", onSensitivityChange);
 originalAudio.addEventListener("loadedmetadata", () => applyPlaybackRate(originalAudio));
 resultAudio.addEventListener("loadedmetadata", () => applyPlaybackRate(resultAudio));
 
@@ -85,6 +90,7 @@ window.addEventListener("resize", () => {
 
 setRecordButtonState("idle");
 setPlaybackRate(1);
+setSensitivityUI(selectedSensitivity);
 setProcessingState(false);
 setAppState(APP_STATES.IDLE, "Готово к загрузке или записи.");
 
@@ -127,6 +133,45 @@ function applyPlaybackRate(audioEl) {
   audioEl.playbackRate = selectedPlaybackRate;
 }
 
+function onSensitivityInput(event) {
+  const nextValue = clampSensitivity(Number(event.target.value));
+  sensitivityValueEl.textContent = `${nextValue}%`;
+}
+
+function onSensitivityChange(event) {
+  const nextValue = clampSensitivity(Number(event.target.value));
+  if (nextValue === selectedSensitivity) {
+    setSensitivityUI(selectedSensitivity);
+    return;
+  }
+
+  selectedSensitivity = nextValue;
+  setSensitivityUI(selectedSensitivity);
+
+  if (processedDownloadUrl) {
+    invalidateProcessedOutput();
+  }
+
+  setAppState(resolveFallbackState(), "Настройки изменены. Необходимо заново обработать трек");
+}
+
+function setSensitivityUI(value) {
+  sensitivityRangeEl.value = String(value);
+  sensitivityValueEl.textContent = `${value}%`;
+}
+
+function clampSensitivity(value) {
+  if (!Number.isFinite(value)) {
+    return 60;
+  }
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function invalidateProcessedOutput() {
+  processedDownloadUrl = "";
+  resetProcessedOutput();
+}
+
 function formatPlaybackRate(rate) {
   return Number.isInteger(rate) ? `${rate}x` : `${rate.toFixed(2).replace(/0$/, "")}x`;
 }
@@ -165,6 +210,7 @@ async function drawWaveformWithState(source, canvas, slot) {
 function setProcessingState(isProcessing) {
   processBtn.classList.toggle("is-loading", isProcessing);
   processLoader.classList.toggle("hidden", !isProcessing);
+  sensitivityRangeEl.disabled = isProcessing;
   processBtn.textContent = isProcessing ? "Очищаем паузы..." : "Очистить от пауз";
   processBtn.disabled = isProcessing || !uploadedId;
 }
@@ -361,6 +407,12 @@ async function onProcessClick() {
   try {
     const response = await fetch(`/api/process/${uploadedId}`, {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        sensitivity: selectedSensitivity,
+      }),
     });
 
     if (!response.ok) {
